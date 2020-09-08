@@ -30,7 +30,6 @@ public class MovieController {
     private MovieModel movieModel;
     private LetterMetricsModel letterMetricsModel;
 
-
     @ApiOperation("Returns all registered movies")
     @GetMapping(value = "/movies")
     public ResponseEntity<List<MovieModel>> getMovies() {
@@ -94,7 +93,7 @@ public class MovieController {
 
     @ApiOperation("Returns a list of the ten most repeated letters in the titles of all films")
     @GetMapping("/movies/letter_metrics_top10")
-    public ResponseEntity<?> getMoviesLetterMetrics() {
+    public ResponseEntity<List<LetterMetricsModel>> getMoviesLetterMetrics() {
 
         List<MovieEntity> entities = repository.findAll();
         List<MovieModel> models = converter.toModelList(entities);
