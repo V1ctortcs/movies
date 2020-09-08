@@ -27,7 +27,9 @@ public class MovieController {
     private final MovieRepository repository;
     private final MovieEntityConverter converter;
 
-    private MovieModel model;
+    private MovieModel movieModel;
+    private LetterMetricsModel letterMetricsModel;
+
 
     @ApiOperation("Returns all registered movies")
     @GetMapping(value = "/movies")
@@ -74,14 +76,14 @@ public class MovieController {
         try {
             MovieEntity entity = repository.findByCodMovie(id);
             if (entity != null) {
-                model = MovieModel.builder()
+                this.movieModel = MovieModel.builder()
                         .codMovie(movieModel.getCodMovie())
                         .releaseDateMovie(movieModel.getReleaseDateMovie())
                         .synopsisMovie(movieModel.getSynopsisMovie())
                         .titleMovie(movieModel.getTitleMovie())
                         .userRatingMovie(movieModel.getUserRatingMovie())
                         .build();
-                repository.save(converter.toEntity(model));
+                repository.save(converter.toEntity(this.movieModel));
                 return new ResponseEntity<>(movieModel, HttpStatus.OK);
             }
             return new ResponseEntity<>(MESSAGE_MOVIE_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -92,35 +94,49 @@ public class MovieController {
 
     @ApiOperation("Returns a list of the ten most repeated letters in the titles of all films")
     @GetMapping("/movies/letter_metrics_top10")
-    public ResponseEntity<List<LetterMetricsModel>> getMoviesLetterMetrics() {
+    public ResponseEntity<?> getMoviesLetterMetrics() {
 
         List<MovieEntity> entities = repository.findAll();
         List<MovieModel> models = converter.toModelList(entities);
+        List<LetterMetricsModel>letterMetricsModels = new ArrayList<>();
 
-        for (int i = 0, j = 0; i < models.size(); i++) {
-            Integer cont = 0;
-            String v = "";
-            LetterMetricsModel letterMetricsModel = new LetterMetricsModel();
-            List<LetterMetricsModel>letterMetricsModels = new ArrayList<>();
-            models.get(i).getTitleMovie().toLowerCase();
-            for (i = 0; i < models.get(0).getTitleMovie().toLowerCase().length(); i++) {
-                for (j = 0; j < models.get(0).getTitleMovie().toLowerCase().length(); j++) {
-                    if (models.get(0).getTitleMovie().toLowerCase().charAt(i) ==
-                            models.get(0).getTitleMovie().toLowerCase().charAt(j)) {
-                        cont++;
+        try {
+            for (int i = 0, j = 0; i < models.size(); i++) {
+                Integer cont = 0;
+                String l = "";
+                models.get(i).getTitleMovie().toLowerCase();
+                for (i = 0; i < models.get(0).getTitleMovie().toLowerCase().length(); i++) {
+                    for (j = 0; j < models.get(0).getTitleMovie().toLowerCase().length(); j++) {
+                        if (models.get(0).getTitleMovie().toLowerCase().charAt(i) ==
+                                models.get(0).getTitleMovie().toLowerCase().charAt(j)) {
+                            cont++;
+                        }
                     }
+                    Character c = models.get(0).getTitleMovie().toLowerCase().charAt(i);
+                    l = ValidatorConsonants(models, letterMetricsModels, i, cont, l, c);
+                    cont = 0;
                 }
-                char c = models.get(0).getTitleMovie().toLowerCase().charAt(i);
-                if (c >= 'a' && c <= 'z' && !v.contains("" + c)) {
-                    v = v + c;
-                    letterMetricsModel.setLetter(models.get(0).getTitleMovie().toLowerCase().charAt(i));
-                    letterMetricsModel.setAmount(cont);
-                    letterMetricsModels.add(letterMetricsModel);
-                }
-                cont = 0;
             }
             return new ResponseEntity<>(letterMetricsModels, HttpStatus.OK);
+        }catch (Exception e){
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private String ValidatorConsonants(List<MovieModel> models, List<LetterMetricsModel> letterMetricsModels, int i,
+                                       Integer cont, String l, Character c) {
+        if (c.equals('b') || c.equals('c')  || c.equals('d') || c.equals('f') || c.equals('g') || c.equals('j')
+                || c.equals('k') || c.equals('l') || c.equals('m')|| c.equals('n') || c.equals('p') || c.equals('q')
+                || c.equals('r') || c.equals('s') || c.equals('t') || c.equals('v') || c.equals('w') || c.equals('x')
+                || c.equals('y') || c.equals('z')
+                && !l.contains("" + c)) {
+            l = l + c;
+            letterMetricsModel = LetterMetricsModel.builder()
+                    .letter(models.get(0).getTitleMovie().toLowerCase().charAt(i))
+                    .amount(cont)
+                    .build();
+            letterMetricsModels.add(letterMetricsModel);
+        }
+        return l;
     }
 }
